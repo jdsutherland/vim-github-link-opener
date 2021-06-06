@@ -1,8 +1,11 @@
+let s:PACKAGE_REGISTRIES = { 'ruby': 'rubygems' }
+
 function! s:OpenPackage(package)
-  let request_url = 'https://rubygems.org/api/v1/gems/' . a:package . '.json'
+  let api_url = 'https://octolinker-api.now.sh/?' . s:PACKAGE_REGISTRIES[&ft] . '='
+  let request_url = api_url . a:package
   let response = webapi#http#get(request_url)
   let content = webapi#json#decode(response.content)
-  let url = get(content, 'source_code_uri', '')
+  let url = get(content.result[0], 'result', '')
   if !empty(url)
     call s:OpenWithNetrw(url)
     return 1
@@ -29,7 +32,8 @@ function! s:OpenGitHubLink()
   if &ft ==# 'go' && has_more_than_one_slash
     let url = matchstr(word, chars . '/' . chars . '/' . chars)
     call s:OpenWithNetrw("https://" . url)
-  elseif index(['javascript', 'javascript.jsx', 'typescript'], &ft) >= 0 && line_has_js_package
+  elseif expand('%:t') ==# 'package.json' ||
+        \ index(['javascript', 'javascriptreact', 'typescript', 'typescript.tsx', 'typescriptreact'], &ft) >= 0 && line_has_js_package
     let re_scoped_or_nonscoped_npm_package = '\v[''"]\zs((\@(\w+[-.]?)+\/(\w+[-.]?)+)|(\w+[-.]?)+)'
     let package = matchstr(getline('.'), re_scoped_or_nonscoped_npm_package)
     if !empty(package)
